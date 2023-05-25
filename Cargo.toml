@@ -2,7 +2,7 @@
 name         = "chainpulse"
 version      = "0.1.1"
 edition      = "2021"
-license-file = "LICENSE"
+license      = "Apache-2.0"
 description  = "Chainpulse is a monitoring tool for IBC relayers"
 repository   = "https://github.com/informalsystems/chainpulse"
 
