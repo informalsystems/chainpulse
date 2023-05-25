@@ -1,4 +1,4 @@
-pub mod cmds;
+pub mod collect;
 pub mod db;
 pub mod metrics;
 pub mod msg;
@@ -42,7 +42,7 @@ async fn main() -> Result<()> {
         tokio::spawn(metrics::run(port, registry));
     }
 
-    if let Err(e) = cmds::collect::run(app.ws_url, app.db_path, metrics).await {
+    if let Err(e) = collect::run(app.ws_url, app.db_path, metrics).await {
         error!("{e}");
     }
 
