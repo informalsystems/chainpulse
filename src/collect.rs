@@ -1,4 +1,3 @@
-use core::fmt;
 use std::{
     path::{Path, PathBuf},
     time::Duration,
@@ -15,7 +14,7 @@ use tendermint_rpc::{
     Client, SubscriptionClient, WebSocketClient, WebSocketClientUrl,
 };
 use tokio::time;
-use tracing::{error, info};
+use tracing::{error, info, warn};
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
@@ -24,36 +23,28 @@ type Pool = SqlitePool;
 use crate::{
     db::{self, PacketRow, TxRow},
     metrics::Metrics,
-    msg::{decode_msg, print_msg, Msg},
+    msg::Msg,
 };
 
 const NEWBLOCK_TIMEOUT: Duration = Duration::from_secs(60);
-const MAX_BLOCKS: usize = 100;
+const DISCONNECT_AFTER_BLOCKS: usize = 100;
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
-struct TimeoutError(Duration);
+pub enum Outcome {
+    #[error("Timeout after {0:?} waiting for a NewBlock event")]
+    Timeout(Duration),
 
-impl fmt::Display for TimeoutError {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Timeout after {:?} waiting for a NewBlock event", self.0)
-    }
-}
-
-#[derive(Copy, Clone, Debug, thiserror::Error)]
-struct BlockElapsed(usize);
-
-impl fmt::Display for BlockElapsed {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "Disconnecting after {} blocks", self.0)
-    }
+    #[error("Disconnecting after {0} blocks")]
+    BlockElapsed(usize),
 }
 
 pub async fn run(ws_url: WebSocketClientUrl, db_path: PathBuf, metrics: Metrics) -> Result<()> {
     loop {
         let task = collect(ws_url.clone(), &db_path, &metrics);
 
-        if let Err(e) = task.await {
-            error!("{}", e);
+        match task.await {
+            Ok(outcome) => warn!("{outcome}"),
+            Err(e) => error!("{e}"),
         }
 
         info!("Reconnecting in 5 seconds...");
@@ -61,7 +52,7 @@ pub async fn run(ws_url: WebSocketClientUrl, db_path: PathBuf, metrics: Metrics)
     }
 }
 
-async fn collect(ws_url: WebSocketClientUrl, db_path: &Path, metrics: &Metrics) -> Result<()> {
+async fn collect(ws_url: WebSocketClientUrl, db_path: &Path, metrics: &Metrics) -> Result<Outcome> {
     let options = sqlx::sqlite::SqliteConnectOptions::new()
         .filename(db_path)
         .create_if_missing(true)
@@ -86,9 +77,11 @@ async fn collect(ws_url: WebSocketClientUrl, db_path: &Path, metrics: &Metrics) 
     let mut count: usize = 0;
 
     loop {
-        let next_event = time::timeout(NEWBLOCK_TIMEOUT, subscription.next())
-            .await
-            .map_err(|_| TimeoutError(NEWBLOCK_TIMEOUT))?;
+        let next_event = time::timeout(NEWBLOCK_TIMEOUT, subscription.next()).await;
+        let next_event = match next_event {
+            Ok(next_event) => next_event,
+            Err(_) => return Ok(Outcome::Timeout(NEWBLOCK_TIMEOUT)),
+        };
 
         count += 1;
 
@@ -102,8 +95,8 @@ async fn collect(ws_url: WebSocketClientUrl, db_path: &Path, metrics: &Metrics) 
             }
         });
 
-        if count >= MAX_BLOCKS {
-            return Err(BlockElapsed(count).into());
+        if count >= DISCONNECT_AFTER_BLOCKS {
+            return Ok(Outcome::BlockElapsed(count));
         }
     }
 }
@@ -132,9 +125,9 @@ async fn on_new_block(
         for msg in msgs {
             let type_url = msg.type_url.clone();
 
-            if let Ok(msg) = decode_msg(msg) {
+            if let Ok(msg) = Msg::decode(msg) {
                 if msg.is_ibc() {
-                    print_msg(&msg);
+                    info!("    {msg}");
 
                     if msg.is_relevant() {
                         process_msg(&pool, &chain_id, &tx_row, &type_url, msg, &metrics).await?;
