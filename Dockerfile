@@ -1,7 +1,7 @@
-# Usage:
-#   docker build . --build-arg TAG=v0.1.0 -t informalsystems/chainpulse:0.1.0 -f Dockerfile
-
 # syntax = docker/dockerfile:1.4
+
+# Usage:
+#   docker build . --build-arg TAG=v0.1.0 -t informalsystems/chainpulse:0.1.0 -f ci/Dockerfile
 
 FROM rust:1-slim-bullseye as builder
 
@@ -28,5 +28,4 @@ LABEL maintainer="hello@informal.systems"
 WORKDIR /app
 COPY    --from=builder /usr/src/chainpulse/chainpulse ./
 
-EXPOSE 8081
 ENTRYPOINT ["/app/chainpulse"]

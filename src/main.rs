@@ -9,7 +9,7 @@ use clap::Parser;
 
 use metrics::Metrics;
 use tendermint_rpc::WebSocketClientUrl;
-use tracing::error;
+use tracing::{error, info};
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
@@ -35,6 +35,7 @@ async fn main() -> Result<()> {
     let app = App::parse();
 
     setup_tracing();
+    setup_ctrlc_handler();
 
     let (metrics, registry) = Metrics::new();
 
@@ -63,4 +64,12 @@ fn setup_tracing() {
         .with(filter_layer)
         .with(fmt_layer)
         .init();
+}
+
+fn setup_ctrlc_handler() {
+    ctrlc::set_handler(move || {
+        info!("Ctrl-C received, shutting down");
+        std::process::exit(0);
+    })
+    .expect("Error setting Ctrl-C handler");
 }
