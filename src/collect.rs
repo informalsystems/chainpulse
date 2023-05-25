@@ -28,6 +28,7 @@ use crate::{
 };
 
 const NEWBLOCK_TIMEOUT: Duration = Duration::from_secs(60);
+const MAX_BLOCKS: usize = 100;
 
 #[derive(Copy, Clone, Debug, thiserror::Error)]
 struct TimeoutError(Duration);
@@ -35,6 +36,15 @@ struct TimeoutError(Duration);
 impl fmt::Display for TimeoutError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "Timeout after {:?} waiting for a NewBlock event", self.0)
+    }
+}
+
+#[derive(Copy, Clone, Debug, thiserror::Error)]
+struct BlockElapsed(usize);
+
+impl fmt::Display for BlockElapsed {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Disconnecting after {} blocks", self.0)
     }
 }
 
@@ -73,10 +83,14 @@ async fn collect(ws_url: WebSocketClientUrl, db_path: &Path, metrics: &Metrics) 
 
     info!("Waiting for new blocks...");
 
+    let mut count: usize = 0;
+
     loop {
         let next_event = time::timeout(NEWBLOCK_TIMEOUT, subscription.next())
             .await
             .map_err(|_| TimeoutError(NEWBLOCK_TIMEOUT))?;
+
+        count += 1;
 
         let Some(Ok(event)) = next_event else { continue; };
 
@@ -87,6 +101,10 @@ async fn collect(ws_url: WebSocketClientUrl, db_path: &Path, metrics: &Metrics) 
                 error!("{e}");
             }
         });
+
+        if count >= MAX_BLOCKS {
+            return Err(BlockElapsed(count).into());
+        }
     }
 }
 
