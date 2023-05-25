@@ -1,7 +1,10 @@
 [package]
-name    = "chainpulse"
-version = "1.0.0"
-edition = "2021"
+name         = "chainpulse"
+version      = "0.1.0"
+edition      = "2021"
+license-file = "LICENSE"
+description  = "Chainpulse is a monitoring tool for IBC relayers"
+repository   = "https://github.com/informalsystems/chainpulse"
 
 [profile.release]
 debug = true
