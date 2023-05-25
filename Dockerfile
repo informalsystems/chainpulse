@@ -29,4 +29,4 @@ WORKDIR /app
 COPY    --from=builder /usr/src/chainpulse/chainpulse ./
 
 EXPOSE 8081
-CMD    ["/app/chainpulse"]
+ENTRYPOINT ["/app/chainpulse"]
