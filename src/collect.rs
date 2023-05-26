@@ -4,7 +4,11 @@ use futures::StreamExt;
 use ibc_proto::cosmos::tx::v1beta1::Tx;
 use prost::Message;
 use sqlx::SqlitePool;
-use tendermint::{block::Height, chain::Id as ChainId, crypto::Sha256};
+use tendermint::{
+    block::Height,
+    chain::{self, Id as ChainId},
+    crypto::Sha256,
+};
 use tendermint_rpc::{
     client::CompatMode,
     event::{Event, EventData},
@@ -35,23 +39,39 @@ pub enum Outcome {
     BlockElapsed(usize),
 }
 
-pub async fn run(ws_url: WebSocketClientUrl, db: Pool, metrics: Metrics) -> Result<()> {
+pub async fn run(
+    chain_id: chain::Id,
+    ws_url: WebSocketClientUrl,
+    db: Pool,
+    metrics: Metrics,
+) -> Result<()> {
     loop {
-        let task = collect(ws_url.clone(), &db, &metrics);
+        let task = collect(&chain_id, &ws_url, &db, &metrics);
 
         match task.await {
             Ok(outcome) => warn!("{outcome}"),
-            Err(e) => error!("{e}"),
+            Err(e) => {
+                metrics.chainpulse_errors(&chain_id);
+
+                error!("{e}")
+            }
         }
+
+        metrics.chainpulse_reconnects(&chain_id);
 
         info!("Reconnecting in 5 seconds...");
         time::sleep(Duration::from_secs(5)).await;
     }
 }
 
-async fn collect(ws_url: WebSocketClientUrl, db: &Pool, metrics: &Metrics) -> Result<Outcome> {
+async fn collect(
+    chain_id: &chain::Id,
+    ws_url: &WebSocketClientUrl,
+    db: &Pool,
+    metrics: &Metrics,
+) -> Result<Outcome> {
     info!("Connecting to {ws_url}...");
-    let (client, driver) = WebSocketClient::builder(ws_url)
+    let (client, driver) = WebSocketClient::builder(ws_url.clone())
         .compat_mode(CompatMode::V0_34)
         .build()
         .await?;
@@ -69,18 +89,28 @@ async fn collect(ws_url: WebSocketClientUrl, db: &Pool, metrics: &Metrics) -> Re
         let next_event = time::timeout(NEWBLOCK_TIMEOUT, subscription.next()).await;
         let next_event = match next_event {
             Ok(next_event) => next_event,
-            Err(_) => return Ok(Outcome::Timeout(NEWBLOCK_TIMEOUT)),
+            Err(_) => {
+                metrics.chainpulse_timeouts(chain_id);
+                return Ok(Outcome::Timeout(NEWBLOCK_TIMEOUT));
+            }
         };
 
         count += 1;
 
         let Some(Ok(event)) = next_event else { continue; };
 
-        let (client, pool, metrics) = (client.clone(), db.clone(), metrics.clone());
+        let (chain_id, client, pool, metrics) = (
+            chain_id.clone(),
+            client.clone(),
+            db.clone(),
+            metrics.clone(),
+        );
 
         tokio::spawn(
-            async {
-                if let Err(e) = on_new_block(client, pool, event, metrics).await {
+            async move {
+                if let Err(e) = on_new_block(client, pool, event, &metrics).await {
+                    metrics.chainpulse_errors(&chain_id);
+
                     error!("{e}");
                 }
             }
@@ -97,7 +127,7 @@ async fn on_new_block(
     client: WebSocketClient,
     db: Pool,
     event: Event,
-    metrics: Metrics,
+    metrics: &Metrics,
 ) -> Result<()> {
     let EventData::NewBlock { block: Some(block), .. } = event.data else { return Ok(()) };
 
@@ -109,6 +139,8 @@ async fn on_new_block(
     let block = client.block(height).await?;
 
     for tx in &block.block.data {
+        metrics.chainpulse_txs(&chain_id);
+
         let tx = Tx::decode(tx.as_slice())?;
         let tx_row = insert_tx(&db, &chain_id, height, &tx).await?;
 
@@ -122,7 +154,7 @@ async fn on_new_block(
                     info!("    {msg}");
 
                     if msg.is_relevant() {
-                        process_msg(&db, &chain_id, &tx_row, &type_url, msg, &metrics).await?;
+                        process_msg(&db, &chain_id, &tx_row, &type_url, msg, metrics).await?;
                     }
                 }
             }
@@ -141,6 +173,8 @@ async fn process_msg(
     metrics: &Metrics,
 ) -> Result<()> {
     let Some(packet) = msg.packet() else { return Ok(()) };
+
+    metrics.chainpulse_packets(chain_id);
 
     let query = r#"
         SELECT * FROM packets

@@ -8,12 +8,12 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
-use config::Config;
 use futures::future;
-use metrics::Metrics;
 use sqlx::SqlitePool;
-use tendermint_rpc::WebSocketClientUrl;
 use tracing::{error, error_span, info, Instrument};
+
+use crate::config::{Config, Endpoint};
+use crate::metrics::Metrics;
 
 pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
@@ -46,8 +46,10 @@ async fn main() -> Result<()> {
         .endpoints
         .into_iter()
         .map(|endpoint| {
+            metrics.chainpulse_chains();
+
             let span = error_span!("collect", chain = %endpoint.name);
-            let task = collect(endpoint.url, pool.clone(), metrics.clone()).instrument(span);
+            let task = collect(endpoint, pool.clone(), metrics.clone()).instrument(span);
             tokio::spawn(task)
         })
         .collect::<Vec<_>>();
@@ -57,8 +59,8 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn collect(url: WebSocketClientUrl, pool: SqlitePool, metrics: Metrics) {
-    if let Err(e) = collect::run(url, pool, metrics).await {
+async fn collect(endpoint: Endpoint, pool: SqlitePool, metrics: Metrics) {
+    if let Err(e) = collect::run(endpoint.name, endpoint.url, pool, metrics).await {
         error!("{e}");
     }
 }
