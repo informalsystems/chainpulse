@@ -1,4 +1,5 @@
 pub mod collect;
+pub mod config;
 pub mod db;
 pub mod metrics;
 pub mod msg;
@@ -7,45 +8,62 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
+use config::Config;
+use futures::future;
 use metrics::Metrics;
-use tendermint_rpc::WebSocketClientUrl;
-use tracing::{error, info};
+use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
+use tracing::{error, error_span, info, Instrument};
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
 
 /// Collect and analyze txs containing IBC messages, export the collected metrics for Prometheus
 #[derive(clap::Parser)]
 struct App {
-    /// Tendermint WebSocket URL
-    #[clap(long = "ws", default_value = "wss://rpc.osmosis.zone/websocket")]
-    ws_url: WebSocketClientUrl,
-
-    /// Path to the SQLite database file, will be created if not existing
-    #[clap(long = "db", default_value = "osmosis.db")]
-    db_path: PathBuf,
-
-    /// Port on which to serve the Prometheus metrics, at `http://0.0.0.0:PORT/metrics`.
-    /// If not set, then the metrics won't be served
-    #[clap(long = "metrics", value_name = "PORT")]
-    metrics: Option<u16>,
+    /// Path to the configuration file
+    #[clap(short, long = "config", default_value = "chainpulse.toml")]
+    config: PathBuf,
 }
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
-    let app = App::parse();
-
     setup_tracing();
     setup_ctrlc_handler();
 
+    let app = App::parse();
+    let config = Config::load(&app.config)?;
+
     let (metrics, registry) = Metrics::new();
-
-    if let Some(port) = app.metrics {
-        tokio::spawn(metrics::run(port, registry));
+    if config.metrics.enabled {
+        tokio::spawn(metrics::run(config.metrics.port, registry));
     }
 
-    if let Err(e) = collect::run(app.ws_url, app.db_path, metrics).await {
-        error!("{e}");
+    let options = SqliteConnectOptions::new()
+        .filename(&config.database.path)
+        .create_if_missing(true)
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
+
+    let pool = SqlitePool::connect_with(options).await?;
+    db::setup(&pool).await;
+
+    let mut handles = Vec::with_capacity(config.chains.endpoints.len());
+
+    for endpoint in config.chains.endpoints {
+        let span = error_span!("collect", chain = %endpoint.name);
+        let (pool, metrics) = (pool.clone(), metrics.clone());
+
+        let handle = tokio::spawn(
+            async move {
+                if let Err(e) = collect::run(endpoint.url, pool, metrics.clone()).await {
+                    error!("{e}");
+                }
+            }
+            .instrument(span),
+        );
+
+        handles.push(handle);
     }
+
+    future::join_all(handles).await;
 
     Ok(())
 }
