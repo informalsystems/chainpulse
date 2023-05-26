@@ -2,8 +2,9 @@
 
 ## Unreleased
 
-- Use a [configuration file](chainpulse.toml) instead of command-line arguments
 - Add support for listening on multiple chains simultaneously
+- Use a [configuration file](./README.md#configuration) instead of command-line arguments
+- Add [internal metrics](./README.md/#internal-metrics)
 
 ## v0.1.2
 
