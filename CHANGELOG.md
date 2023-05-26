@@ -5,6 +5,7 @@
 - Add support for listening on multiple chains simultaneously
 - Use a [configuration file](./README.md#configuration) instead of command-line arguments
 - Add [internal metrics](./README.md/#internal-metrics)
+- Add support for CometBFT 0.34 and 0.37
 
 ## v0.1.2
 

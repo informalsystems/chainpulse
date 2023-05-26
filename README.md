@@ -33,8 +33,8 @@ Create a configuration file at `chainpulse.toml` with the following content:
 ```toml
 [chains]
 endpoints = [
-  { name = "neutron", url = "wss://neutron-rpc.lavenderfive.com/websocket" },
-  { name = "osmosis", url = "wss://rpc.osmosis.zone/websocket" },
+  { name = "neutron", comet_version = "0.34", url = "wss://neutron-rpc.lavenderfive.com/websocket" },
+  { name = "osmosis", comet_version = "0.34", url = "wss://rpc.osmosis.zone/websocket" },
 ]
 
 [database]
@@ -44,6 +44,8 @@ path = "data.db"
 enabled = true
 port    = 3000
 ```
+
+Note: The `comet_version` field is optional and defaults to "0.34".
 
 ## Usage
 
