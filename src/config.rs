@@ -4,6 +4,7 @@ use std::{
 };
 
 use serde::{Deserialize, Serialize};
+use tendermint::chain;
 use tendermint_rpc::WebSocketClientUrl;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -29,7 +30,7 @@ pub struct Chains {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Endpoint {
-    pub name: String,
+    pub name: chain::Id,
     pub url: WebSocketClientUrl,
 }
 

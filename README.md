@@ -76,9 +76,51 @@ $ chainpulse --config chainpulse.toml
 
 The built-in HTTP server at `/metrics` exports the following Prometheus metrics:
 
-- `ibc_effected_packets{chain_id, src_channel, src_port, dst_channel, dst_port, signer, memo}`
-- `ibc_uneffected_packets{chain_id, src_channel, src_port, dst_channel, dst_port, signer, memo}`
-- `ibc_frontrun_counter{chain_id, src_channel, src_port, dst_channel, dst_port, signer, frontrunned_by, memo, effected_memo}`
+```
+# HELP ibc_effected_packets Counts the number of IBC packets that are effected
+# TYPE ibc_effected_packets counter
+ibc_effected_packets{chain_id, src_channel, src_port, dst_channel, dst_port, signer, memo}
+```
+
+```
+# HELP ibc_uneffected_packets Counts the number of IBC packets that are not effected
+# TYPE ibc_uneffected_packets counter
+ibc_uneffected_packets{chain_id, src_channel, src_port, dst_channel, dst_port, signer, memo}
+```
+
+```
+# HELP ibc_frontrun_counter Counts the number of times a signer gets frontrun by the same original signer
+# TYPE ibc_frontrun_counter counter
+ibc_frontrun_counter{chain_id, src_channel, src_port, dst_channel, dst_port, signer, frontrunned_by, memo, effected_memo}
+```
+
+### Internal metrics
+
+The following internal metrics are also available, for monitor Chain Pulse itself:
+
+```
+# HELP chainpulse_chains The number of chains being monitored
+# TYPE chainpulse_chains gauge
+chainpulse_chains 2
+```
+
+```
+# HELP chainpulse_packets The number of packets processed
+# TYPE chainpulse_packets counter
+chainpulse_packets{chain_id}
+```
+
+```
+# HELP chainpulse_reconnects The number of times we had to reconnect to the WebSocket
+# TYPE chainpulse_reconnects counter
+chainpulse_reconnects{chain_id}
+```
+
+```
+# HELP chainpulse_txs The number of txs processed
+# TYPE chainpulse_txs counter
+chainpulse_txs{chain_id}
+```
 
 ## Attribution
 
