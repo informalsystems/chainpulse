@@ -41,12 +41,13 @@ pub enum Outcome {
 
 pub async fn run(
     chain_id: chain::Id,
+    compat_mode: CompatMode,
     ws_url: WebSocketClientUrl,
     db: Pool,
     metrics: Metrics,
 ) -> Result<()> {
     loop {
-        let task = collect(&chain_id, &ws_url, &db, &metrics);
+        let task = collect(&chain_id, compat_mode, &ws_url, &db, &metrics);
 
         match task.await {
             Ok(outcome) => warn!("{outcome}"),
@@ -66,13 +67,14 @@ pub async fn run(
 
 async fn collect(
     chain_id: &chain::Id,
+    compat_mode: CompatMode,
     ws_url: &WebSocketClientUrl,
     db: &Pool,
     metrics: &Metrics,
 ) -> Result<Outcome> {
     info!("Connecting to {ws_url}...");
     let (client, driver) = WebSocketClient::builder(ws_url.clone())
-        .compat_mode(CompatMode::V0_34)
+        .compat_mode(compat_mode)
         .build()
         .await?;
 

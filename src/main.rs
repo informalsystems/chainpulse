@@ -60,7 +60,15 @@ async fn main() -> Result<()> {
 }
 
 async fn collect(endpoint: Endpoint, pool: SqlitePool, metrics: Metrics) {
-    if let Err(e) = collect::run(endpoint.name, endpoint.url, pool, metrics).await {
+    if let Err(e) = collect::run(
+        endpoint.name,
+        endpoint.comet_version,
+        endpoint.url,
+        pool,
+        metrics,
+    )
+    .await
+    {
         error!("{e}");
     }
 }
