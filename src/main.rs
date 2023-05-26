@@ -11,10 +11,11 @@ use clap::Parser;
 use config::Config;
 use futures::future;
 use metrics::Metrics;
-use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
+use sqlx::SqlitePool;
+use tendermint_rpc::WebSocketClientUrl;
 use tracing::{error, error_span, info, Instrument};
 
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 /// Collect and analyze txs containing IBC messages, export the collected metrics for Prometheus
 #[derive(clap::Parser)]
@@ -37,35 +38,29 @@ async fn main() -> Result<()> {
         tokio::spawn(metrics::run(config.metrics.port, registry));
     }
 
-    let options = SqliteConnectOptions::new()
-        .filename(&config.database.path)
-        .create_if_missing(true)
-        .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
-
-    let pool = SqlitePool::connect_with(options).await?;
+    let pool = db::connect(&config.database.path).await?;
     db::setup(&pool).await;
 
-    let mut handles = Vec::with_capacity(config.chains.endpoints.len());
-
-    for endpoint in config.chains.endpoints {
-        let span = error_span!("collect", chain = %endpoint.name);
-        let (pool, metrics) = (pool.clone(), metrics.clone());
-
-        let handle = tokio::spawn(
-            async move {
-                if let Err(e) = collect::run(endpoint.url, pool, metrics.clone()).await {
-                    error!("{e}");
-                }
-            }
-            .instrument(span),
-        );
-
-        handles.push(handle);
-    }
+    let handles = config
+        .chains
+        .endpoints
+        .into_iter()
+        .map(|endpoint| {
+            let span = error_span!("collect", chain = %endpoint.name);
+            let task = collect(endpoint.url, pool.clone(), metrics.clone()).instrument(span);
+            tokio::spawn(task)
+        })
+        .collect::<Vec<_>>();
 
     future::join_all(handles).await;
 
     Ok(())
+}
+
+async fn collect(url: WebSocketClientUrl, pool: SqlitePool, metrics: Metrics) {
+    if let Err(e) = collect::run(url, pool, metrics).await {
+        error!("{e}");
+    }
 }
 
 fn setup_tracing() {

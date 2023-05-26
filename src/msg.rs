@@ -16,7 +16,7 @@ use ibc_proto::{
 
 use prost::Message;
 
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
+use crate::Result;
 
 #[derive(Clone, Debug)]
 pub enum Msg {

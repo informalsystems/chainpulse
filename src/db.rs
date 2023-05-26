@@ -1,5 +1,9 @@
-use sqlx::SqlitePool;
+use std::path::Path;
+
+use sqlx::{sqlite::SqliteConnectOptions, SqlitePool};
 use time::PrimitiveDateTime;
+
+use crate::Result;
 
 #[derive(sqlx::FromRow)]
 pub struct TxRow {
@@ -26,6 +30,17 @@ pub struct PacketRow {
     pub effected_signer: Option<String>,
     pub effected_tx: Option<i64>,
     pub created_at: PrimitiveDateTime,
+}
+
+pub async fn connect(path: &Path) -> Result<SqlitePool> {
+    let options = SqliteConnectOptions::new()
+        .filename(path)
+        .create_if_missing(true)
+        .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
+
+    let pool = SqlitePool::connect_with(options).await?;
+
+    Ok(pool)
 }
 
 pub async fn setup(pool: &SqlitePool) {
