@@ -66,9 +66,8 @@ jobs:
           build-args: TAG=v${{env.TAG}}
           platforms: linux/amd64,linux/arm64
           tags: |
-            ghcr.io/informalsystems/chainpulse:${{env.TAG}}
-            ghcr.io/informalsystems/chainpulse:latest
             informalsystems/chainpulse:${{env.TAG}}
             informalsystems/chainpulse:latest
+            ghcr.io/informalsystems/chainpulse:${{env.TAG}}
           cache-from: type=gha
           cache-to: type=gha,mode=max
