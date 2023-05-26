@@ -1,7 +1,4 @@
-use std::{
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::time::Duration;
 
 use futures::StreamExt;
 use ibc_proto::cosmos::tx::v1beta1::Tx;
@@ -14,14 +11,14 @@ use tendermint_rpc::{
     Client, SubscriptionClient, WebSocketClient, WebSocketClientUrl,
 };
 use tokio::time;
-use tracing::{error, info, warn};
+use tracing::{error, info, warn, Instrument};
 
 type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 type Pool = SqlitePool;
 
 use crate::{
-    db::{self, PacketRow, TxRow},
+    db::{PacketRow, TxRow},
     metrics::Metrics,
     msg::Msg,
 };
@@ -38,9 +35,9 @@ pub enum Outcome {
     BlockElapsed(usize),
 }
 
-pub async fn run(ws_url: WebSocketClientUrl, db_path: PathBuf, metrics: Metrics) -> Result<()> {
+pub async fn run(ws_url: WebSocketClientUrl, db: Pool, metrics: Metrics) -> Result<()> {
     loop {
-        let task = collect(ws_url.clone(), &db_path, &metrics);
+        let task = collect(ws_url.clone(), &db, &metrics);
 
         match task.await {
             Ok(outcome) => warn!("{outcome}"),
@@ -52,16 +49,8 @@ pub async fn run(ws_url: WebSocketClientUrl, db_path: PathBuf, metrics: Metrics)
     }
 }
 
-async fn collect(ws_url: WebSocketClientUrl, db_path: &Path, metrics: &Metrics) -> Result<Outcome> {
-    let options = sqlx::sqlite::SqliteConnectOptions::new()
-        .filename(db_path)
-        .create_if_missing(true)
-        .journal_mode(sqlx::sqlite::SqliteJournalMode::Wal);
-
-    let pool = SqlitePool::connect_with(options).await?;
-    db::setup(&pool).await;
-
-    info!("Connecting...");
+async fn collect(ws_url: WebSocketClientUrl, db: &Pool, metrics: &Metrics) -> Result<Outcome> {
+    info!("Connecting to {ws_url}...");
     let (client, driver) = WebSocketClient::builder(ws_url)
         .compat_mode(CompatMode::V0_34)
         .build()
@@ -87,13 +76,16 @@ async fn collect(ws_url: WebSocketClientUrl, db_path: &Path, metrics: &Metrics) 
 
         let Some(Ok(event)) = next_event else { continue; };
 
-        let (client, pool, metrics) = (client.clone(), pool.clone(), metrics.clone());
+        let (client, pool, metrics) = (client.clone(), db.clone(), metrics.clone());
 
-        tokio::spawn(async {
-            if let Err(e) = on_new_block(client, pool, event, metrics).await {
-                error!("{e}");
+        tokio::spawn(
+            async {
+                if let Err(e) = on_new_block(client, pool, event, metrics).await {
+                    error!("{e}");
+                }
             }
-        });
+            .in_current_span(),
+        );
 
         if count >= DISCONNECT_AFTER_BLOCKS {
             return Ok(Outcome::BlockElapsed(count));
@@ -103,7 +95,7 @@ async fn collect(ws_url: WebSocketClientUrl, db_path: &Path, metrics: &Metrics) 
 
 async fn on_new_block(
     client: WebSocketClient,
-    pool: Pool,
+    db: Pool,
     event: Event,
     metrics: Metrics,
 ) -> Result<()> {
@@ -118,7 +110,7 @@ async fn on_new_block(
 
     for tx in &block.block.data {
         let tx = Tx::decode(tx.as_slice())?;
-        let tx_row = insert_tx(&pool, &chain_id, height, &tx).await?;
+        let tx_row = insert_tx(&db, &chain_id, height, &tx).await?;
 
         let msgs = tx.body.ok_or("missing tx body")?.messages;
 
@@ -130,7 +122,7 @@ async fn on_new_block(
                     info!("    {msg}");
 
                     if msg.is_relevant() {
-                        process_msg(&pool, &chain_id, &tx_row, &type_url, msg, &metrics).await?;
+                        process_msg(&db, &chain_id, &tx_row, &type_url, msg, &metrics).await?;
                     }
                 }
             }
@@ -236,7 +228,7 @@ async fn process_msg(
     Ok(())
 }
 
-async fn insert_tx(pool: &Pool, chain_id: &ChainId, height: Height, tx: &Tx) -> Result<TxRow> {
+async fn insert_tx(db: &Pool, chain_id: &ChainId, height: Height, tx: &Tx) -> Result<TxRow> {
     let query = r#"
         INSERT OR IGNORE INTO txs (chain, height, hash, memo, created_at)
         VALUES (?, ?, ?, ?, datetime('now'))
@@ -260,7 +252,7 @@ async fn insert_tx(pool: &Pool, chain_id: &ChainId, height: Height, tx: &Tx) -> 
         .bind(height)
         .bind(&hash)
         .bind(memo)
-        .execute(pool)
+        .execute(db)
         .await?;
 
     let tx: TxRow =
@@ -268,7 +260,7 @@ async fn insert_tx(pool: &Pool, chain_id: &ChainId, height: Height, tx: &Tx) -> 
             .bind(chain_id.as_str())
             .bind(height)
             .bind(hash)
-            .fetch_one(pool)
+            .fetch_one(db)
             .await?;
 
     Ok(tx)

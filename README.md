@@ -26,28 +26,55 @@ The collected data is stored in a SQLite database and the metrics are exported t
 
 3. The `chainpulse` executable can now be found in `target/release`
 
+## Configuration
+
+Create a configuration file at `chainpulse.toml` with the following content:
+
+```toml
+[chains]
+endpoints = [
+  { name = "neutron", url = "wss://neutron-rpc.lavenderfive.com/websocket" },
+  { name = "osmosis", url = "wss://rpc.osmosis.zone/websocket" },
+]
+
+[database]
+path = "data.db"
+
+[metrics]
+enabled = true
+port    = 3000
+```
+
 ## Usage
 
 ```
-Collect and analyze txs containing IBC messages, export metrics for Prometheus
+Collect and analyze txs containing IBC messages, export the collected metrics for Prometheus
 
 Usage: chainpulse [OPTIONS]
 
 Options:
-      --ws <WS_URL>     Tendermint WebSocket URL [default: wss://rpc.osmosis.zone/websocket]
-      --db <DB_PATH>    Path to the SQLite database file, will be created if not existing [default: osmosis.db]
-      --metrics <PORT>  Port on which to serve the Prometheus metrics, at `http://0.0.0.0:PORT/metrics`.
-                        If not set, then the metrics won't be served
-  -h, --help            Print help
+  -c, --config <CONFIG>  Path to the configuration file [default: chainpulse.toml]
+  -h, --help             Print help
 ```
 
-To collect metrics for Osmosis and serve those at `http://localhost:3000/metrics`, run the following command:
+Run the collector using the configuration file above to collect packet metrics on Osmosis and Neutron:
 
-```
-$ chainpulse --ws wss://rpc.osmosis.zone/websocket --db osmosis.db --metrics 3000
+```shell
+$ chainpulse --config chainpulse.toml
+2023-05-26T10:17:28.378380Z  INFO Metrics server listening at http://localhost:3000/metrics
+2023-05-26T10:17:28.386299Z  INFO collect{chain=neutron}: Connecting to wss://neutron-rpc.lavenderfive.com/websocket...
+2023-05-26T10:17:28.386951Z  INFO collect{chain=osmosis}: Connecting to wss://rpc.osmosis.zone/websocket...
+2023-05-26T10:17:28.932084Z  INFO collect{chain=neutron}: Subscribing to NewBlock events...
+2023-05-26T10:17:29.012893Z  INFO collect{chain=neutron}: Waiting for new blocks...
+2023-05-26T10:17:29.078725Z  INFO collect{chain=osmosis}: Subscribing to NewBlock events...
+2023-05-26T10:17:29.254485Z  INFO collect{chain=osmosis}: Waiting for new blocks...
+
+...
 ```
 
-## Metrics
+## Prometheus Metrics
+
+The built-in HTTP server at `/metrics` exports the following Prometheus metrics:
 
 - `ibc_effected_packets{chain_id, src_channel, src_port, dst_channel, dst_port, signer, memo}`
 - `ibc_uneffected_packets{chain_id, src_channel, src_port, dst_channel, dst_port, signer, memo}`

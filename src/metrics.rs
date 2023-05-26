@@ -173,7 +173,7 @@ pub async fn run(port: u16, registry: Registry) -> Result<()> {
     let server =
         Server::bind(&SocketAddr::from(([0, 0, 0, 0], port))).serve(app.into_make_service());
 
-    info!("Metrics server listening on port {}", port);
+    info!("Metrics server listening at http://localhost:{port}/metrics");
     server.await?;
 
     Ok(())

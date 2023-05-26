@@ -1,0 +1,12 @@
+[chains]
+endpoints = [
+  { name = "neutron", url = "wss://neutron-rpc.lavenderfive.com/websocket" },
+  { name = "osmosis", url = "wss://rpc.osmosis.zone/websocket" },
+]
+
+[database]
+path = "data.db"
+
+[metrics]
+enabled = true
+port    = 3000

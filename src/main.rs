@@ -1,4 +1,5 @@
 pub mod collect;
+pub mod config;
 pub mod db;
 pub mod metrics;
 pub mod msg;
@@ -7,47 +8,59 @@ use std::path::PathBuf;
 
 use clap::Parser;
 
+use config::Config;
+use futures::future;
 use metrics::Metrics;
+use sqlx::SqlitePool;
 use tendermint_rpc::WebSocketClientUrl;
-use tracing::{error, info};
+use tracing::{error, error_span, info, Instrument};
 
-type Result<T> = std::result::Result<T, Box<dyn std::error::Error>>;
+pub type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>>;
 
 /// Collect and analyze txs containing IBC messages, export the collected metrics for Prometheus
 #[derive(clap::Parser)]
 struct App {
-    /// Tendermint WebSocket URL
-    #[clap(long = "ws", default_value = "wss://rpc.osmosis.zone/websocket")]
-    ws_url: WebSocketClientUrl,
-
-    /// Path to the SQLite database file, will be created if not existing
-    #[clap(long = "db", default_value = "osmosis.db")]
-    db_path: PathBuf,
-
-    /// Port on which to serve the Prometheus metrics, at `http://0.0.0.0:PORT/metrics`.
-    /// If not set, then the metrics won't be served
-    #[clap(long = "metrics", value_name = "PORT")]
-    metrics: Option<u16>,
+    /// Path to the configuration file
+    #[clap(short, long = "config", default_value = "chainpulse.toml")]
+    config: PathBuf,
 }
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
-    let app = App::parse();
-
     setup_tracing();
     setup_ctrlc_handler();
 
+    let app = App::parse();
+    let config = Config::load(&app.config)?;
+
     let (metrics, registry) = Metrics::new();
-
-    if let Some(port) = app.metrics {
-        tokio::spawn(metrics::run(port, registry));
+    if config.metrics.enabled {
+        tokio::spawn(metrics::run(config.metrics.port, registry));
     }
 
-    if let Err(e) = collect::run(app.ws_url, app.db_path, metrics).await {
-        error!("{e}");
-    }
+    let pool = db::connect(&config.database.path).await?;
+    db::setup(&pool).await;
+
+    let handles = config
+        .chains
+        .endpoints
+        .into_iter()
+        .map(|endpoint| {
+            let span = error_span!("collect", chain = %endpoint.name);
+            let task = collect(endpoint.url, pool.clone(), metrics.clone()).instrument(span);
+            tokio::spawn(task)
+        })
+        .collect::<Vec<_>>();
+
+    future::join_all(handles).await;
 
     Ok(())
+}
+
+async fn collect(url: WebSocketClientUrl, pool: SqlitePool, metrics: Metrics) {
+    if let Err(e) = collect::run(url, pool, metrics).await {
+        error!("{e}");
+    }
 }
 
 fn setup_tracing() {
