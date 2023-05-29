@@ -7,7 +7,7 @@ description  = "Chainpulse is a monitoring tool for IBC relayers"
 repository   = "https://github.com/informalsystems/chainpulse"
 
 [profile.release]
-lto = true
+lto = 'thin'
 
 [dependencies]
 axum               = "0.6"
