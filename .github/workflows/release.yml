@@ -69,5 +69,6 @@ jobs:
             informalsystems/chainpulse:${{env.TAG}}
             informalsystems/chainpulse:latest
             ghcr.io/informalsystems/chainpulse:${{env.TAG}}
+            ghcr.io/informalsystems/chainpulse:latest
           cache-from: type=gha
           cache-to: type=gha,mode=max
