@@ -1,11 +1,10 @@
 # syntax = docker/dockerfile:1.4
 
 # Usage:
-#   docker build . --build-arg TAG=v0.1.0 -t informalsystems/chainpulse:0.1.0 -f ci/Dockerfile
+#   docker build . --build-arg -t informalsystems/chainpulse:0.1.0 -f ci/Dockerfile
 
 FROM rust:1-slim-bullseye as builder
 
-ARG TAG
 WORKDIR /usr/src
 
 RUN     USER=root cargo new chainpulse
