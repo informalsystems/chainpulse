@@ -35,7 +35,8 @@ async fn main() -> Result<()> {
 
     let (metrics, registry) = Metrics::new();
     if config.metrics.enabled {
-        tokio::spawn(metrics::run(config.metrics.port, registry));
+        let span = error_span!("metrics");
+        tokio::spawn(metrics::run(config.metrics.port, registry).instrument(span));
     }
 
     let pool = db::connect(&config.database.path).await?;
