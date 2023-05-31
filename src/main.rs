@@ -3,6 +3,7 @@ pub mod config;
 pub mod db;
 pub mod metrics;
 pub mod msg;
+pub mod populate;
 
 use std::path::PathBuf;
 
@@ -42,6 +43,14 @@ async fn main() -> Result<()> {
     let pool = db::connect(&config.database.path).await?;
     db::setup(&pool).await;
 
+    if config.metrics.enabled && config.metrics.populate_on_start {
+        info!("Populating metrics on start");
+
+        for endpoint in &config.chains.endpoints {
+            populate::run(&endpoint.name, &pool, &metrics).await?;
+        }
+    }
+
     let handles = config
         .chains
         .endpoints
@@ -61,15 +70,16 @@ async fn main() -> Result<()> {
 }
 
 async fn collect(endpoint: Endpoint, pool: SqlitePool, metrics: Metrics) {
-    if let Err(e) = collect::run(
+    let result = collect::run(
         endpoint.name,
         endpoint.comet_version,
         endpoint.url,
         pool,
         metrics,
     )
-    .await
-    {
+    .await;
+
+    if let Err(e) = result {
         error!("{e}");
     }
 }

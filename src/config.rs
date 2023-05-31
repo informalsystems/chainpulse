@@ -50,6 +50,9 @@ pub struct Database {
 pub struct Metrics {
     pub enabled: bool,
     pub port: u16,
+
+    #[serde(default)]
+    pub populate_on_start: bool,
 }
 
 mod default {

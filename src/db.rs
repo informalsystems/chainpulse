@@ -5,7 +5,7 @@ use time::PrimitiveDateTime;
 
 use crate::Result;
 
-#[derive(sqlx::FromRow)]
+#[derive(Clone, Debug, sqlx::FromRow)]
 pub struct TxRow {
     pub id: i64,
     pub chain: String,
@@ -15,7 +15,7 @@ pub struct TxRow {
     pub created_at: PrimitiveDateTime,
 }
 
-#[derive(sqlx::FromRow)]
+#[derive(Clone, Debug, sqlx::FromRow)]
 pub struct PacketRow {
     pub id: i64,
     pub tx_id: i64,
