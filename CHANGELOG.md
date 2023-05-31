@@ -2,16 +2,22 @@
 
 ## Unreleased
 
-> Nothing yet
+- Add a `populate_on_start` option to the `[metrics]` section in the configuration file to
+  populate the Prometheus metrics on start by replaying all packets present in the database so far
+  ([#8](https://github.com/informalsystems/chainpulse/pull/8))
 
 ## v0.2.0
 
 *May 26th 2023*
 
-- Add support for listening on multiple chains simultaneously (https://github.com/informalsystems/chainpulse/pull/1)
-- Use a [configuration file](./README.md#configuration) instead of command-line arguments (https://github.com/informalsystems/chainpulse/pull/1)
-- Add [internal metrics](./README.md/#internal-metrics) (https://github.com/informalsystems/chainpulse/pull/2)
-- Add support for CometBFT 0.34 and 0.37 (https://github.com/informalsystems/chainpulse/pull/4)
+- Add support for listening on multiple chains simultaneously
+  ([#1](https://github.com/informalsystems/chainpulse/pull/1))
+- Use a [configuration file](./README.md#configuration) instead of command-line arguments
+  ([#1](https://github.com/informalsystems/chainpulse/pull/1))
+- Add [internal metrics](./README.md/#internal-metrics)
+  ([#2](https://github.com/informalsystems/chainpulse/pull/2))
+- Add support for CometBFT 0.34 and 0.37
+  ([#4](https://github.com/informalsystems/chainpulse/pull/4))
 
 ## v0.1.2
 
