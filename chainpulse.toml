@@ -10,5 +10,3 @@ path = "data.db"
 [metrics]
 enabled = true
 port    = 3000
-
-populate_on_start = false
