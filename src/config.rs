@@ -50,6 +50,9 @@ pub struct Database {
 pub struct Metrics {
     pub enabled: bool,
     pub port: u16,
+
+    #[serde(default = "crate::config::default::stuck_packets")]
+    pub stuck_packets: bool,
 }
 
 mod default {
@@ -57,6 +60,10 @@ mod default {
 
     pub fn comet_version() -> CometVersion {
         CometVersion::V0_34
+    }
+
+    pub fn stuck_packets() -> bool {
+        true
     }
 }
 
