@@ -79,21 +79,25 @@ $ chainpulse --config chainpulse.toml
 The built-in HTTP server at `/metrics` exports the following Prometheus metrics:
 
 ```
-# HELP ibc_effected_packets Counts the number of IBC packets that are effected
+# HELP ibc_effected_packets The number of IBC packets that are effected
 # TYPE ibc_effected_packets counter
 ibc_effected_packets{chain_id, src_channel, src_port, dst_channel, dst_port, signer, memo}
 ```
 
 ```
-# HELP ibc_uneffected_packets Counts the number of IBC packets that are not effected
+# HELP ibc_uneffected_packets The number of IBC packets that are not effected
 # TYPE ibc_uneffected_packets counter
 ibc_uneffected_packets{chain_id, src_channel, src_port, dst_channel, dst_port, signer, memo}
 ```
 
 ```
-# HELP ibc_frontrun_counter Counts the number of times a signer gets frontrun by the same original signer
+# HELP ibc_frontrun_counter The number of times a signer gets frontrun by the original signer
 # TYPE ibc_frontrun_counter counter
 ibc_frontrun_counter{chain_id, src_channel, src_port, dst_channel, dst_port, signer, frontrunned_by, memo, effected_memo}
+
+# HELP ibc_stuck_packets The number of packets stuck on an IBC channel
+# TYPE ibc_stuck_packets gauge
+ibc_stuck_packets{dst_chain,src_chain,src_channel} 1
 ```
 
 ### Internal metrics
