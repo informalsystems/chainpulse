@@ -12,7 +12,7 @@ lto = 'thin'
 [dependencies]
 axum               = "0.6"
 clap               = { version = "4.3", features = ["derive"] }
-ctrlc              = { version = "3.3", features = ["termination"] }
+ctrlc              = { version = "3.4", features = ["termination"] }
 futures            = "0.3"
 ibc-proto          = { version = "0.31.0-alpha.2", default-features = false }
 prometheus         = "0.13"
