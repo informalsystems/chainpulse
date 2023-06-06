@@ -35,8 +35,6 @@ jobs:
         with:
           bin: chainpulse
           target: ${{ matrix.config.target }}
-          tar: unix
-          zip: unix
           archive: $bin-$tag-$target
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
