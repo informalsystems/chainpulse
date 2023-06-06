@@ -7,6 +7,8 @@
   **Warning:** Use with caution if you are already tracking any of the counters with Prometheus as this
   will result in inflated results for all counters (but not gauges or histograms).
   ([#8](https://github.com/informalsystems/chainpulse/pull/8))
+- Monitor packets stuck on IBC channels, and expose their number per channel as a new `ibc_stuck_packets` metric
+  ([#9](https://github.com/informalsystems/chainpulse/pull/9))
 
 ## v0.2.0
 

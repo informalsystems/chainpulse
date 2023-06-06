@@ -15,17 +15,21 @@ type Result<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync>
 
 #[derive(Clone)]
 pub struct Metrics {
-    /// Counts the number of IBC packets that are effected
+    /// The number of IBC packets that are effected
     /// Labels: ['chain_id', 'src_channel', 'src_port', 'dst_channel', 'dst_port', 'signer', 'memo']
     ibc_effected_packets: CounterVec,
 
-    /// Counts the number of IBC packets that are not effected
+    /// The number of IBC packets that are not effected
     /// Labels: ['chain_id', 'src_channel', 'src_port', 'dst_channel', 'dst_port', 'signer', 'memo']
     ibc_uneffected_packets: CounterVec,
 
-    /// Counts the number of times a signer gets frontrun by the same original signer
+    /// The number of times a signer gets frontrun by the original signer
     /// Labels: ['chain_id', 'src_channel', 'src_port', 'dst_channel', 'dst_port', 'signer', 'frontrunned_by', 'memo', 'effected_memo']
     ibc_frontrun_counter: CounterVec,
+
+    /// The number of stuck packets on an IBC channel
+    /// Labels: ['src_chain', 'dst_chain', 'src_channel']
+    ibc_stuck_packets: GaugeVec,
 
     /// The number of chains being monitored
     chainpulse_chains: GaugeVec,
@@ -44,7 +48,6 @@ pub struct Metrics {
 
     /// The number of times the WebSocket connection timed out
     /// Labels: 'chain_id']
-    /// []
     chainpulse_timeouts: CounterVec,
 
     /// The number of times we encountered an error
@@ -58,7 +61,7 @@ impl Metrics {
 
         let ibc_effected_packets = register_int_counter_vec_with_registry!(
             "ibc_effected_packets",
-            "Counts the number of IBC packets that are effected",
+            "The number of IBC packets that have been relayed and were effected",
             &[
                 "chain_id",
                 "src_channel",
@@ -74,7 +77,7 @@ impl Metrics {
 
         let ibc_uneffected_packets = register_int_counter_vec_with_registry!(
             "ibc_uneffected_packets",
-            "Counts the number of IBC packets that are not effected",
+            "The number of IBC packets that were relayed but not effected",
             &[
                 "chain_id",
                 "src_channel",
@@ -90,7 +93,7 @@ impl Metrics {
 
         let ibc_frontrun_counter = register_int_counter_vec_with_registry!(
             "ibc_frontrun_counter",
-            "Counts the number of times a signer gets frontrun by the same original signer",
+            "The number of times a signer gets frontrun by the original signer",
             &[
                 "chain_id",
                 "src_channel",
@@ -102,6 +105,14 @@ impl Metrics {
                 "memo",
                 "effected_memo"
             ],
+            registry
+        )
+        .unwrap();
+
+        let ibc_stuck_packets = register_int_gauge_vec_with_registry!(
+            "ibc_stuck_packets",
+            "The number of packets stuck on an IBC channel",
+            &["src_chain", "dst_chain", "src_channel"],
             registry
         )
         .unwrap();
@@ -159,6 +170,7 @@ impl Metrics {
                 ibc_effected_packets,
                 ibc_uneffected_packets,
                 ibc_frontrun_counter,
+                ibc_stuck_packets,
                 chainpulse_chains,
                 chainpulse_txs,
                 chainpulse_packets,
@@ -244,6 +256,18 @@ impl Metrics {
                 effected_memo,
             ])
             .inc();
+    }
+
+    pub fn ibc_stuck_packets(
+        &self,
+        src_chain: &str,
+        dst_chain: &str,
+        src_channel: &str,
+        value: i64,
+    ) {
+        self.ibc_stuck_packets
+            .with_label_values(&[src_chain, dst_chain, src_channel])
+            .set(value);
     }
 
     pub fn chainpulse_chains(&self) {
