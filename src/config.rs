@@ -51,6 +51,9 @@ pub struct Metrics {
     pub enabled: bool,
     pub port: u16,
 
+    #[serde(default)]
+    pub populate_on_start: bool,
+
     #[serde(default = "crate::config::default::stuck_packets")]
     pub stuck_packets: bool,
 }
