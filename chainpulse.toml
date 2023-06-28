@@ -1,8 +1,9 @@
 [chains]
 # The list of chains to monitor, with their chain identifier, Comet/Tendermint version, and the URL of their WebSocket endpoint.
 endpoints = [
-  { name = "neutron-1", comet_version = "0.34", url = "wss://neutron-rpc.lavenderfive.com/websocket" },
-  { name = "osmosis-1", comet_version = "0.34", url = "wss://rpc.osmosis.zone/websocket" },
+  { name = "cosmoshub-4", comet_version = "0.34", url = "wss://cosmoshub-rpc.lavenderfive.com:/websocket" },
+  { name = "osmosis-1",   comet_version = "0.34", url = "wss://rpc.osmosis.zone/websocket" },
+  { name = "neutron-1",   comet_version = "0.34", url = "wss://neutron-rpc.lavenderfive.com/websocket" },
 ]
 
 [database]

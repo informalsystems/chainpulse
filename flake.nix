@@ -3,26 +3,24 @@
 
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    flake-utils.url = "github:numtide/flake-utils";
   };
 
-  outputs = { self, nixpkgs }:
-    let
-      supportedSystems = [ "x86_64-linux" "aarch64-linux" "x86_64-darwin" "aarch64-darwin" ];
-      forAllSystems = nixpkgs.lib.genAttrs supportedSystems;
-      pkgsFor = nixpkgs.legacyPackages;
-    in {
-      packages = forAllSystems (system:
-        let
-          manifest = (nixpkgs.lib.importTOML ./Cargo.toml).package;
-          bin = pkgsFor.${system}.callPackage ./default.nix {};
+  outputs = { self, nixpkgs, flake-utils }:
+    flake-utils.lib.eachDefaultSystem (system:
+      let
+        pkgs = nixpkgs.legacyPackages.${system};
+      in {
+        packages = rec {
+          bin = pkgs.callPackage ./default.nix {};
           # dockerImage = pkgsFor.${system}.callPackage ./docker.nix { inherit bin; };
-        in {
-          # inherit bin dockerImage;
+
           default = bin;
-        }
-      );
-      devShells = forAllSystems (system: {
-        default = pkgsFor.${system}.callPackage ./shell.nix {};
-      });
-    };
+        };
+
+        devShells = {
+          default = pkgs.callPackage ./shell.nix {};
+        };
+      }
+    );
 }
