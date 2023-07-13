@@ -12,7 +12,7 @@ jobs:
   create-release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: taiki-e/create-gh-release-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -30,7 +30,7 @@ jobs:
           - { os: macos-latest, target: aarch64-apple-darwin }
     runs-on: ${{ matrix.config.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
       - uses: taiki-e/upload-rust-binary-action@v1
         with:
           bin: chainpulse
