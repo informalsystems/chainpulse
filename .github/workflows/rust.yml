@@ -19,10 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
+        uses: dtolnay/rust-toolchain@stable
       - name: Format
         uses: actions-rs/cargo@v1
         with:
@@ -34,11 +31,9 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
           components: clippy
-          override: true
       - name: Clippy
         uses: actions-rs/clippy-check@v1
         with:
