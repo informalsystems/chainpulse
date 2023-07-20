@@ -178,6 +178,14 @@ async fn process_msg(
 
     metrics.chainpulse_packets(chain_id);
 
+    tracing::debug!(
+        "    Packet #{} in tx {} ({}) - {}",
+        packet.sequence,
+        tx_row.id,
+        tx_row.hash,
+        tx_row.memo
+    );
+
     let query = r#"
         SELECT * FROM packets
         WHERE   src_channel = ? 
@@ -204,6 +212,13 @@ async fn process_msg(
             .bind(existing.tx_id)
             .fetch_one(pool)
             .await?;
+
+        tracing::debug!(
+            "        Frontrun by tx {} ({}) - {}",
+            existing.tx_id,
+            effected_tx.hash,
+            effected_tx.memo
+        );
 
         metrics.ibc_uneffected_packets(
             chain_id,
