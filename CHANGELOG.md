@@ -4,6 +4,12 @@
 
 > Nothing yet.
 
+## v0.3.1
+
+*July 20th, 2023*
+
+- Fix a bug where ChainPulse would fail to create the SQLite database.
+
 ## v0.3.0
 
 *June 6th, 2023*
