@@ -49,7 +49,7 @@ pub async fn setup(pool: &SqlitePool) {
 }
 
 pub async fn create_tables(pool: &SqlitePool) {
-    let tables = [
+    const TABLES: &[&str] = &[
         r#"
         CREATE TABLE IF NOT EXISTS txs (
             id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -78,39 +78,43 @@ pub async fn create_tables(pool: &SqlitePool) {
         "#,
     ];
 
-    for table in tables {
+    for table in TABLES {
         sqlx::query(table).execute(pool).await.unwrap();
     }
 
-    create_indexes(pool).await;
+    const MIGRATIONS: &[&str] =
+        &["ALTER TABLE packets ADD COLUMN effected_tx INTEGER REFERENCES txs (id);"];
 
-    run_migration(
-        pool,
-        "ALTER TABLE packets ADD COLUMN effected_tx INTEGER REFERENCES txs (id);",
-    )
-    .await;
+    for migration in MIGRATIONS {
+        run_migration(pool, migration).await;
+    }
+
+    create_indexes(pool).await;
 }
 
 async fn create_indexes(pool: &SqlitePool) {
-    let indexes = [
+    const INDEXES: &[&str] = &[
         "CREATE UNIQUE INDEX IF NOT EXISTS txs_unique          ON txs (chain, hash);",
         "CREATE        INDEX IF NOT EXISTS txs_chain           ON txs (chain);",
         "CREATE        INDEX IF NOT EXISTS txs_hash            ON txs (hash);",
+        "CREATE        INDEX IF NOT EXISTS txs_memo            ON txs (memo);",
         "CREATE        INDEX IF NOT EXISTS txs_height          ON txs (height);",
         "CREATE        INDEX IF NOT EXISTS txs_created_at      ON txs (created_at);",
+        "CREATE        INDEX IF NOT EXISTS packets_tx_id       ON packets(tx_id);",
         "CREATE        INDEX IF NOT EXISTS packets_signer      ON packets (signer);",
         "CREATE        INDEX IF NOT EXISTS packets_src_channel ON packets (src_channel);",
         "CREATE        INDEX IF NOT EXISTS packets_dst_channel ON packets (dst_channel);",
         "CREATE        INDEX IF NOT EXISTS packets_effected    ON packets (effected);",
+        "CREATE        INDEX IF NOT EXISTS packets_effected_tx ON packets (effected_tx);",
     ];
 
-    for index in indexes {
+    for index in INDEXES {
         sqlx::query(index).execute(pool).await.unwrap();
     }
 }
 
 async fn run_migration(pool: &SqlitePool, migration: &str) {
     if (sqlx::query(migration).execute(pool).await).is_err() {
-        tracing::debug!("Migration was already applied: {}", migration);
+        tracing::debug!("Migration fail to apply, perhaps it was not needed: {migration}");
     }
 }
