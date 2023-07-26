@@ -40,6 +40,19 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features --all-targets
 
+  publish-dry-run:
+    name: Publish (dry run)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+      - uses: katyo/publish-crates@v2
+        with:
+          dry-run: true
+
   # test:
   #   runs-on: ubuntu-latest
   #   timeout-minutes: 30

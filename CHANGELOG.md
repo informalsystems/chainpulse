@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+> Nothing yet
+
+## v0.3.2
+
 - Fix a bug where `Timeout` messages were not handled.
 
 ## v0.3.1
