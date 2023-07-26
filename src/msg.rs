@@ -92,7 +92,7 @@ impl Msg {
                 .map(Msg::UpdateClient)
                 .map_err(Into::into),
 
-            "/ibc.core.channel.v1.Timeout" => MsgTimeout::decode(msg.value.as_slice())
+            "/ibc.core.channel.v1.MsgTimeout" => MsgTimeout::decode(msg.value.as_slice())
                 .map(Msg::Timeout)
                 .map_err(Into::into),
 
