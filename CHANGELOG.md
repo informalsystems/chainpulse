@@ -6,6 +6,8 @@
 
 ## v0.3.2
 
+*July 26th, 2023*
+
 - Fix a bug where `Timeout` messages were not handled.
 
 ## v0.3.1
