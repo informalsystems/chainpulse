@@ -1,13 +1,19 @@
-[chains]
-# The list of chains to monitor, with their chain identifier, Comet/Tendermint version, and the URL of their WebSocket endpoint.
-endpoints = [
-  { name = "neutron-1", comet_version = "0.34", url = "wss://neutron-rpc.lavenderfive.com/websocket" },
-  { name = "osmosis-1", comet_version = "0.34", url = "wss://rpc.osmosis.zone/websocket" },
-]
+# Chains to monitor, with their chain identifier, Comet/Tendermint version, and the URL of their WebSocket endpoint.
+[chains.neutron-1]
+url = "wss://neutron-rpc.lavenderfive.com/websocket"
+comet_version = "0.34"
+
+[chains.osmosis-1]
+url = "wss://rpc.osmosis.zone/websocket"
+comet_version = "0.34"
+
+[chains.entrypoint-test-1]
+url = "ws://80.85.105.197:26657/websocket"
+comet_version = "0.37"
 
 [database]
 # Path to the SQLite database file where the metrics will be stored.
-path = "data.db"
+path = "entrypoint.db"
 
 [metrics]
 # Whether or not to expose the metrics as a Prometheus scrape endpoint.

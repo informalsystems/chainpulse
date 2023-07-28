@@ -17,10 +17,10 @@ pub async fn run(chains: Chains, metrics: Metrics) -> Result<()> {
 
         let mut stuck = Vec::new();
 
-        for endpoint in &chains.endpoints {
+        for chain_id in chains.endpoints.keys() {
             stuck.extend(
                 status
-                    .by_chain(endpoint.name.as_str())
+                    .by_chain(chain_id.as_str())
                     .filter(|channel| channel.status.size_queue > 0),
             );
         }

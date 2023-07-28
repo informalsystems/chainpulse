@@ -1,4 +1,5 @@
 use std::{
+    collections::BTreeMap,
     fs, io,
     path::{Path, PathBuf},
 };
@@ -26,12 +27,12 @@ impl Config {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Chains {
-    pub endpoints: Vec<Endpoint>,
+    #[serde(flatten)]
+    pub endpoints: BTreeMap<chain::Id, Endpoint>,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Endpoint {
-    pub name: chain::Id,
     pub url: WebSocketClientUrl,
 
     #[serde(
