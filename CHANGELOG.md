@@ -4,6 +4,10 @@
 
 > Nothing yet
 
+- Use a table to configure the chains instead of a list.
+  Please check out the latest [`chainpulse.toml`](./chainpulse.toml) file for the latest syntax.
+  ([#42](https://github.com/informalsystems/chainpulse/pull/8))
+
 ## v0.3.2
 
 *July 26th, 2023*
