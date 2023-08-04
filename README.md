@@ -31,11 +31,9 @@ The collected data is stored in a SQLite database and the metrics are exported t
 Create a configuration file at `chainpulse.toml` with the following content:
 
 ```toml
-[chains]
-endpoints = [
-  { name = "neutron", comet_version = "0.34", url = "wss://neutron-rpc.lavenderfive.com/websocket" },
-  { name = "osmosis", comet_version = "0.34", url = "wss://rpc.osmosis.zone/websocket" },
-]
+[chains.osmosis-1]
+url = "wss://rpc.osmosis.zone/websocket"
+comet_version = "0.34"
 
 [database]
 path = "data.db"
@@ -59,18 +57,14 @@ Options:
   -h, --help             Print help
 ```
 
-Run the collector using the configuration file above to collect packet metrics on Osmosis and Neutron:
+Run the collector using the configuration file above to collect packet metrics on Osmosis:
 
 ```shell
 $ chainpulse --config chainpulse.toml
 2023-05-26T10:17:28.378380Z  INFO Metrics server listening at http://localhost:3000/metrics
-2023-05-26T10:17:28.386299Z  INFO collect{chain=neutron}: Connecting to wss://neutron-rpc.lavenderfive.com/websocket...
 2023-05-26T10:17:28.386951Z  INFO collect{chain=osmosis}: Connecting to wss://rpc.osmosis.zone/websocket...
-2023-05-26T10:17:28.932084Z  INFO collect{chain=neutron}: Subscribing to NewBlock events...
-2023-05-26T10:17:29.012893Z  INFO collect{chain=neutron}: Waiting for new blocks...
 2023-05-26T10:17:29.078725Z  INFO collect{chain=osmosis}: Subscribing to NewBlock events...
 2023-05-26T10:17:29.254485Z  INFO collect{chain=osmosis}: Waiting for new blocks...
-
 ...
 ```
 
