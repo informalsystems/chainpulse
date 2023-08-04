@@ -11,6 +11,7 @@ use std::path::PathBuf;
 use clap::Parser;
 use futures::future;
 use sqlx::SqlitePool;
+use tendermint::chain;
 use tracing::{error, error_span, info, Instrument};
 
 use crate::config::{Config, Endpoint};
@@ -56,8 +57,8 @@ async fn main() -> Result<()> {
     if config.metrics.enabled && config.metrics.populate_on_start {
         info!("Populating metrics on start");
 
-        for endpoint in &config.chains.endpoints {
-            populate::run(&endpoint.name, &pool, &metrics).await?;
+        for chain_id in config.chains.endpoints.keys() {
+            populate::run(chain_id, &pool, &metrics).await?;
         }
     }
 
@@ -65,11 +66,11 @@ async fn main() -> Result<()> {
         .chains
         .endpoints
         .into_iter()
-        .map(|endpoint| {
+        .map(|(chain_id, endpoint)| {
             metrics.chainpulse_chains();
 
-            let span = error_span!("collect", chain = %endpoint.name);
-            let task = collect(endpoint, pool.clone(), metrics.clone()).instrument(span);
+            let span = error_span!("collect", chain = %chain_id);
+            let task = collect(chain_id, endpoint, pool.clone(), metrics.clone()).instrument(span);
             tokio::spawn(task)
         })
         .collect::<Vec<_>>();
@@ -79,9 +80,9 @@ async fn main() -> Result<()> {
     Ok(())
 }
 
-async fn collect(endpoint: Endpoint, pool: SqlitePool, metrics: Metrics) {
+async fn collect(chain_id: chain::Id, endpoint: Endpoint, pool: SqlitePool, metrics: Metrics) {
     let result = collect::run(
-        endpoint.name,
+        chain_id,
         endpoint.comet_version,
         endpoint.url,
         pool,
