@@ -139,7 +139,8 @@ fn parse_desc(desc: &str) -> Result<(&str, &str, &str)> {
     }
 
     let (src_chain, Some(src_channel)) =
-        extract_chain_and_channel(left).map_err(|_| "missing source chain or channel")? else {
+        extract_chain_and_channel(left).map_err(|_| "missing source chain or channel")?
+    else {
         return Err("missing source channel".into());
     };
 

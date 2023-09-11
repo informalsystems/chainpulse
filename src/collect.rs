@@ -99,7 +99,9 @@ async fn collect(
 
         count += 1;
 
-        let Some(Ok(event)) = next_event else { continue; };
+        let Some(Ok(event)) = next_event else {
+            continue;
+        };
 
         let (chain_id, client, pool, metrics) = (
             chain_id.clone(),
@@ -131,7 +133,12 @@ async fn on_new_block(
     event: Event,
     metrics: &Metrics,
 ) -> Result<()> {
-    let EventData::NewBlock { block: Some(block), .. } = event.data else { return Ok(()) };
+    let EventData::NewBlock {
+        block: Some(block), ..
+    } = event.data
+    else {
+        return Ok(());
+    };
 
     let height = block.header.height;
     let chain_id = block.header.chain_id;
@@ -174,7 +181,9 @@ async fn process_msg(
     msg: Msg,
     metrics: &Metrics,
 ) -> Result<()> {
-    let Some(packet) = msg.packet() else { return Ok(()) };
+    let Some(packet) = msg.packet() else {
+        return Ok(());
+    };
 
     metrics.chainpulse_packets(chain_id);
 
