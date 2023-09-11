@@ -88,10 +88,6 @@ ibc_uneffected_packets{chain_id, src_channel, src_port, dst_channel, dst_port, s
 # HELP ibc_frontrun_counter The number of times a signer gets frontrun by the original signer
 # TYPE ibc_frontrun_counter counter
 ibc_frontrun_counter{chain_id, src_channel, src_port, dst_channel, dst_port, signer, frontrunned_by, memo, effected_memo}
-
-# HELP ibc_stuck_packets The number of packets stuck on an IBC channel
-# TYPE ibc_stuck_packets gauge
-ibc_stuck_packets{dst_chain,src_chain,src_channel} 1
 ```
 
 ### Internal metrics

@@ -27,10 +27,6 @@ pub struct Metrics {
     /// Labels: ['chain_id', 'src_channel', 'src_port', 'dst_channel', 'dst_port', 'signer', 'frontrunned_by', 'memo', 'effected_memo']
     ibc_frontrun_counter: CounterVec,
 
-    /// The number of stuck packets on an IBC channel
-    /// Labels: ['src_chain', 'dst_chain', 'src_channel']
-    ibc_stuck_packets: GaugeVec,
-
     /// The number of chains being monitored
     chainpulse_chains: GaugeVec,
 
@@ -109,14 +105,6 @@ impl Metrics {
         )
         .unwrap();
 
-        let ibc_stuck_packets = register_int_gauge_vec_with_registry!(
-            "ibc_stuck_packets",
-            "The number of packets stuck on an IBC channel",
-            &["src_chain", "dst_chain", "src_channel"],
-            registry
-        )
-        .unwrap();
-
         let chainpulse_chains = register_int_gauge_vec_with_registry!(
             "chainpulse_chains",
             "The number of chains being monitored",
@@ -170,7 +158,6 @@ impl Metrics {
                 ibc_effected_packets,
                 ibc_uneffected_packets,
                 ibc_frontrun_counter,
-                ibc_stuck_packets,
                 chainpulse_chains,
                 chainpulse_txs,
                 chainpulse_packets,
@@ -256,18 +243,6 @@ impl Metrics {
                 effected_memo,
             ])
             .inc();
-    }
-
-    pub fn ibc_stuck_packets(
-        &self,
-        src_chain: &str,
-        dst_chain: &str,
-        src_channel: &str,
-        value: i64,
-    ) {
-        self.ibc_stuck_packets
-            .with_label_values(&[src_chain, dst_chain, src_channel])
-            .set(value);
     }
 
     pub fn chainpulse_chains(&self) {
