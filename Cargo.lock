@@ -290,7 +290,7 @@ checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
 name = "chainpulse"
-version = "0.3.2"
+version = "0.4.0-pre"
 dependencies = [
  "axum",
  "clap",
@@ -305,7 +305,7 @@ dependencies = [
  "sqlx",
  "subtle-encoding",
  "tendermint",
- "tendermint-proto 0.32.2",
+ "tendermint-proto 0.33.1",
  "tendermint-rpc",
  "thiserror",
  "time",
