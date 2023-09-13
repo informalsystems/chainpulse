@@ -26,6 +26,16 @@ The collected data is stored in a SQLite database and the metrics are exported t
 
 3. The `chainpulse` executable can now be found in `target/release`
 
+## Docker
+
+Alternatively, Docker images are available on [Docker Hub](https://hub.docker.com/r/informalsystems/chainpulse/tags).
+
+Read the next section, then get started with:
+
+```
+$ docker run informalsystems/chainpulse:latest --config chainpulse.toml
+```
+
 ## Configuration
 
 Create a configuration file at `chainpulse.toml` with the following content:
