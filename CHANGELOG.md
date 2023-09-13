@@ -6,7 +6,6 @@
 
 - Use a table to configure the chains instead of a list.
   Please check out the latest [`chainpulse.toml`](./chainpulse.toml) file for the latest syntax.
-  ([#42](https://github.com/informalsystems/chainpulse/pull/8))
 
 ## v0.3.2
 
@@ -26,25 +25,19 @@
 
 - Add a `populate_on_start` option to the `metrics` section in the configuration to
   populate the Prometheus metrics on start by replaying all packets present in the database so far.
-  ([#8](https://github.com/informalsystems/chainpulse/pull/8))
 
   **Warning:** Use with caution if you are already tracking any of the counters with Prometheus as this
   will result in inflated results for all counters (but not gauges or histograms).
 - Monitor packets stuck on IBC channels, and expose their number per channel as a new `ibc_stuck_packets` metric
-  ([#9](https://github.com/informalsystems/chainpulse/pull/9))
 
 ## v0.2.0
 
 *May 26th 2023*
 
 - Add support for listening on multiple chains simultaneously
-  ([#1](https://github.com/informalsystems/chainpulse/pull/1))
 - Use a [configuration file](./README.md#configuration) instead of command-line arguments
-  ([#1](https://github.com/informalsystems/chainpulse/pull/1))
 - Add [internal metrics](./README.md/#internal-metrics)
-  ([#2](https://github.com/informalsystems/chainpulse/pull/2))
 - Add support for CometBFT 0.34 and 0.37
-  ([#4](https://github.com/informalsystems/chainpulse/pull/4))
 
 ## v0.1.2
 
