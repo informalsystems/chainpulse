@@ -28,6 +28,6 @@ tendermint-rpc     = { version = "0.32", features = ["websocket-client"] }
 thiserror          = "1"
 time               = "0.3"
 tokio              = { version = "1", features = ["full"] }
-toml               = "0.7.4"
+toml               = "0.8.0"
 tracing            = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter", "registry"] }
