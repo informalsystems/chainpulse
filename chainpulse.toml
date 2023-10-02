@@ -21,3 +21,8 @@ enabled = true
 
 # The port to expose the metrics on, at /metrics.
 port = 3000
+
+# Whether or not to monitor packets stuck on IBC channels
+# where either the source or destination chain is part of the
+# list of chains to monitor.
+stuck_packets = true

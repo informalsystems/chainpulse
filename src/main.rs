@@ -4,6 +4,7 @@ pub mod db;
 pub mod metrics;
 pub mod msg;
 pub mod populate;
+pub mod status;
 
 use std::path::PathBuf;
 
@@ -39,6 +40,14 @@ async fn main() -> Result<()> {
     if config.metrics.enabled {
         tokio::spawn(
             metrics::run(config.metrics.port, registry).instrument(error_span!("metrics")),
+        );
+    }
+
+    if config.metrics.stuck_packets {
+        info!("Monitoring packets stuck on IBC channels");
+
+        tokio::spawn(
+            status::run(config.chains.clone(), metrics.clone()).instrument(error_span!("status")),
         );
     }
 
