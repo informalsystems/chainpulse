@@ -16,7 +16,7 @@ ctrlc              = { version = "3.4", features = ["termination"] }
 futures            = "0.3"
 ibc-proto          = { version = "0.34.1", default-features = false }
 prometheus         = "0.13"
-prost              = "0.11"
+prost              = "0.12"
 reqwest            = { version = "0.11.20", default-features = false, features = ["rustls-tls-native-roots"] }
 serde              = { version = "1.0.163", features = ["derive"] }
 serde_json         = "1"
